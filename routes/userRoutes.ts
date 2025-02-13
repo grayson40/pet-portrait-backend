@@ -25,7 +25,7 @@ router.post('/signup', async (req: Request, res: Response): Promise<any> => {
     });
 
     if (error) return res.status(400).json({ error: error.message });
-    
+
     // Check if data is null
     if (!data || !data.user) {
         return res.status(400).json({ error: 'Signup failed' });
@@ -44,7 +44,7 @@ router.post('/signup', async (req: Request, res: Response): Promise<any> => {
 //     });
 
 //     if (error) return res.status(400).json({ error: error.message });
-    
+
 //     // Check if data is null
 //     if (!data || !data.user) {
 //         return res.status(400).json({ error: 'Signin failed' });
@@ -53,23 +53,52 @@ router.post('/signup', async (req: Request, res: Response): Promise<any> => {
 //     res.status(200).json({ user: data.user, session: data.session });
 // });
 
+// Define interfaces
+interface Pet {
+    name: string;
+    type: string;
+}
+
+interface UserProfile {
+    display_name: string;
+    pets: Pet[];
+    sound_volume: number;
+    subscription_tier: 'basic' | 'premium';
+}
+
 // Get user profile
 router.get('/:id', async (req: Request, res: Response): Promise<any> => {
     const { id } = req.params;
-    const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', id)
-        .single();
 
-    if (error) return res.status(400).json({ error: error.message });
-    
-    // Check if data is null
-    if (!data) {
-        return res.status(404).json({ error: 'User not found' });
+    try {
+        // Get user data
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('display_name, sound_volume, subscription_tier')
+            .eq('id', id)
+            .single();
+
+        if (userError) throw userError;
+
+        // Get user's pets
+        const { data: pets, error: petsError } = await supabase
+            .from('pets')
+            .select('name, type')
+            .eq('user_id', id);
+
+        if (petsError) throw petsError;
+
+        const userProfile: UserProfile = {
+            display_name: user?.display_name,
+            pets: pets || [],
+            sound_volume: user?.sound_volume,
+            subscription_tier: user?.subscription_tier
+        };
+
+        res.status(200).json(userProfile);
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
     }
-
-    res.status(200).json(data);
 });
 
 // Update user by ID
@@ -98,6 +127,38 @@ router.delete('/:id', async (req: Request, res: Response): Promise<any> => {
     if (error) return res.status(400).json({ error: error.message });
 
     res.status(204).send();
+});
+
+// Get user stats
+router.get('/:id/stats', async (req: Request, res: Response): Promise<any> => {
+    const { id } = req.params;
+
+    try {
+        // Get total photos
+        const { data: photos, error: photosError } = await supabase
+            .from('photos')
+            .select('id, is_perfect_shot, likes_count, created_at')
+            .eq('user_id', id);
+
+        if (photosError) throw photosError;
+
+        // Calculate stats
+        const now = new Date();
+        const oneWeekAgo = new Date(now.setDate(now.getDate() - 7));
+
+        const stats = {
+            totalPhotos: photos?.length || 0,
+            perfectShots: photos?.filter(photo => photo.is_perfect_shot).length || 0,
+            totalLikes: photos?.reduce((sum, photo) => sum + (photo.likes_count || 0), 0) || 0,
+            photosThisWeek: photos?.filter(photo =>
+                new Date(photo.created_at) > oneWeekAgo
+            ).length || 0
+        };
+
+        res.status(200).json(stats);
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
 });
 
 export default router; 
