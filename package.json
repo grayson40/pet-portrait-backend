@@ -10,7 +10,8 @@
     "start": "node dist/server.js",
     "build": "tsc",
     "dev": "ts-node server.ts",
-    "seed": "ts-node scripts/seed.ts"
+    "seed": "ts-node scripts/seed.ts",
+    "stripe:listen": "stripe listen --forward-to http://localhost:3000/api/subscription/webhook"
   },
   "keywords": [],
   "author": "",
@@ -27,6 +28,7 @@
     "@supabase/supabase-js": "^2.48.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "stripe": "^17.6.0"
   }
 }
