@@ -83,7 +83,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<any> => {
         // Get user's pets
         const { data: pets, error: petsError } = await supabase
             .from('pets')
-            .select('name, type')
+            .select('name, type, id')
             .eq('user_id', id);
 
         if (petsError) throw petsError;

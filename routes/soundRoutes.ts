@@ -91,58 +91,29 @@ router.delete('/:id', async (req: Request, res: Response): Promise<any> => {
 // });
 
 // Activate a sound collection
-router.post('/collections/:id/activate', async (req: Request, res: Response): Promise<any> => {
-    try {
-        const { id } = req.params;
-        const userId = req.user?.id;
+// router.post('/collections/:id/activate', async (req: Request, res: Response): Promise<any> => {
+//     try {
+//         const { id } = req.params;
+//         const userId = req.user?.id;
 
-        if (!userId) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
+//         if (!userId) {
+//             return res.status(401).json({ error: 'Unauthorized' });
+//         }
 
-        // Start a transaction to update collection statuses
-        const { error } = await supabase
-            .rpc('activate_sound_collection', {
-                p_collection_id: id,
-                p_user_id: userId
-            });
+//         // Start a transaction to update collection statuses
+//         const { error } = await supabase
+//             .rpc('activate_sound_collection', {
+//                 p_collection_id: id,
+//                 p_user_id: userId
+//             });
 
-        if (error) throw error;
+//         if (error) throw error;
 
-        return res.status(200).json({ success: true });
-    } catch (error) {
-        console.error('Error activating collection:', error);
-        return res.status(500).json({ error: 'Failed to activate sound collection' });
-    }
-});
-
-// Create a new sound collection
-router.post('/collections', async (req: Request, res: Response): Promise<any> => {
-    try {
-        const { name } = req.body;
-        const userId = req.user?.id;
-
-        if (!userId) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
-
-        const { data, error } = await supabase
-            .from('sound_collections')
-            .insert([{
-                name,
-                user_id: userId,
-                is_active: false
-            }])
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        return res.status(201).json(data);
-    } catch (error) {
-        console.error('Error creating collection:', error);
-        return res.status(500).json({ error: 'Failed to create sound collection' });
-    }
-});
+//         return res.status(200).json({ success: true });
+//     } catch (error) {
+//         console.error('Error activating collection:', error);
+//         return res.status(500).json({ error: 'Failed to activate sound collection' });
+//     }
+// });
 
 export default router;
