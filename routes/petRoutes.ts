@@ -8,10 +8,13 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
     const { user_id, name, type } = req.body;
     const { data, error } = await supabase
         .from('pets')
-        .insert([{ user_id, name, type }]);
+        .insert([{ user_id, name, type }])
+        .select();
 
     if (error) return res.status(400).json({ error: error.message });
-    res.status(201).json(data);
+    if (!data) return res.status(400).json({ error: 'Failed to create pet' });
+    
+    res.status(201).json(data[0]);
 });
 
 // Get all pets for a user

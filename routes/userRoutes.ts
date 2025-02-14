@@ -64,6 +64,7 @@ interface UserProfile {
     pets: Pet[];
     sound_volume: number;
     subscription_tier: 'basic' | 'premium';
+    email: string;
 }
 
 // Get user profile
@@ -74,7 +75,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<any> => {
         // Get user data
         const { data: user, error: userError } = await supabase
             .from('users')
-            .select('display_name, sound_volume, subscription_tier')
+            .select('display_name, sound_volume, subscription_tier, email')
             .eq('id', id)
             .single();
 
@@ -92,7 +93,8 @@ router.get('/:id', async (req: Request, res: Response): Promise<any> => {
             display_name: user?.display_name,
             pets: pets || [],
             sound_volume: user?.sound_volume,
-            subscription_tier: user?.subscription_tier
+            subscription_tier: user?.subscription_tier,
+            email: user?.email
         };
 
         res.status(200).json(userProfile);
