@@ -17,7 +17,8 @@ app.post('/api/subscription/webhook',
 
 // Then add the other middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // Basic route
 app.get('/', (req: Request, res: Response) => {
@@ -33,6 +34,7 @@ import marketplaceSoundRoutes from './routes/marketplaceSoundRoutes';
 import userSoundRoutes from './routes/userSoundRoutes';
 import soundCollectionRoutes from './routes/soundCollectionRoutes';
 import subscriptionRoutes from './routes/subscriptionRoutes';
+import captionRoutes from './routes/captionRoutes';
 
 // Use routes
 app.use('/api/users', userRoutes);
@@ -47,6 +49,9 @@ app.use('/api/sounds/collections', soundCollectionRoutes);
 
 // Subscription routes
 app.use('/api/subscription', subscriptionRoutes);
+
+// Caption routes
+app.use('/api/captions', captionRoutes);
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: Function) => {
