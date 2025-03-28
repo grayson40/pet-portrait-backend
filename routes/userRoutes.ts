@@ -5,14 +5,14 @@ const router = express.Router();
 
 // Create user method
 router.post('/', async (req: Request, res: Response): Promise<any> => {
-    const { id, email, display_name, phone, avatar_url } = req.body;
-    const { error } = await supabase
+    const { id, email, display_name, subscription_tier } = req.body;
+    const { data, error } = await supabase
         .from('users')
-        .insert([{ id, email, display_name, phone, avatar_url }]);
+        .insert([{ id, email, display_name, subscription_tier }]);
 
     if (error) return res.status(400).json({ error: error.message });
 
-    res.status(201).json('User created successfully');
+    res.status(201).json(data);
 });
 
 // User signup
@@ -108,12 +108,21 @@ router.put('/:id', async (req: Request, res: Response): Promise<any> => {
     const { id } = req.params;
     const updates = req.body;
 
+    // Update the database user
     const { error } = await supabase
         .from('users')
         .update(updates)
         .eq('id', id);
 
     if (error) return res.status(400).json({ error: error.message });
+
+    // Use the admin API to update auth user data
+    const { error: authError } = await supabase.auth.admin.updateUserById(
+        id,
+        { user_metadata: updates }
+    );
+
+    if (authError) return res.status(400).json({ error: authError.message });
 
     res.status(200).json('User updated successfully');
 });
@@ -125,6 +134,10 @@ router.delete('/:id', async (req: Request, res: Response): Promise<any> => {
         .from('users')
         .delete()
         .eq('id', id);
+
+    // Delete the auth user
+    const { error: authError } = await supabase.auth.admin.deleteUser(id);
+    if (authError) return res.status(400).json({ error: authError.message });
 
     if (error) return res.status(400).json({ error: error.message });
 

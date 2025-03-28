@@ -10,80 +10,60 @@ const supabase = createClient(
 
 async function seedDatabase() {
     try {
-        // First create auth users
+        // Create auth users first
         const authUsers = await Promise.all([
             supabase.auth.admin.createUser({
-                email: 'pet.lover@example.com',
+                email: 'john@example.com',
                 password: 'password123',
                 email_confirm: true
             }),
             supabase.auth.admin.createUser({
-                email: 'trainer@example.com',
+                email: 'jane@example.com',
                 password: 'password123',
                 email_confirm: true
             }),
             supabase.auth.admin.createUser({
-                email: 'catlady@example.com',
+                email: 'bob@example.com',
                 password: 'password123',
                 email_confirm: true
             })
         ]);
 
-        // Now create database users with auth IDs
+        // Check for auth user creation errors
+        authUsers.forEach(({ data, error }) => {
+            if (error) throw error;
+        });
+
+        // Create database users with auth user IDs
         const { data: users, error: userError } = await supabase.from('users').insert([
             {
                 id: authUsers[0].data.user!.id,
-                display_name: 'Pet Lover',
-                email: 'pet.lover@example.com',
-                phone: '+1234567890',
-                avatar_url: 'https://example.com/avatars/petlover.jpg',
-                subscription_tier: 'premium',
-                subscription_valid_until: new Date(2025, 1, 1).toISOString(),
-                subscription_auto_renew: true,
-                sound_volume: 75,
-                push_notifications: true,
-                default_filter: 'natural',
-                photo_count: 15,
-                storage_used: 1500000,
-                last_active: new Date().toISOString()
+                display_name: 'John Doe',
+                email: 'john@example.com',
+                subscription_tier: 'basic',
+                subscription_valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+                sound_volume: 80,
             },
             {
                 id: authUsers[1].data.user!.id,
-                display_name: 'Dog Trainer',
-                email: 'trainer@example.com',
-                phone: '+1987654321',
-                avatar_url: 'https://example.com/avatars/trainer.jpg',
+                display_name: 'Jane Smith',
+                email: 'jane@example.com',
                 subscription_tier: 'premium',
-                subscription_valid_until: new Date(2025, 3, 1).toISOString(),
-                subscription_auto_renew: true,
-                sound_volume: 85,
-                push_notifications: true,
-                default_filter: 'vibrant',
-                photo_count: 25,
-                storage_used: 2500000,
-                last_active: new Date().toISOString()
+                subscription_valid_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+                sound_volume: 75,
             },
             {
                 id: authUsers[2].data.user!.id,
-                display_name: 'Cat Lady',
-                email: 'catlady@example.com',
-                phone: '+1122334455',
-                avatar_url: 'https://example.com/avatars/catlady.jpg',
+                display_name: 'Bob Wilson',
+                email: 'bob@example.com',
                 subscription_tier: 'basic',
-                subscription_valid_until: null,
-                subscription_auto_renew: false,
-                sound_volume: 60,
-                push_notifications: false,
-                default_filter: 'warm',
-                photo_count: 8,
-                storage_used: 800000,
-                last_active: new Date().toISOString()
+                sound_volume: 85,
             }
         ]).select();
 
         if (userError) throw userError;
 
-        // Pet types
+        // Sample pets
         const { data: pets, error: petError } = await supabase.from('pets').insert([
             {
                 user_id: users![0].id,
@@ -101,165 +81,127 @@ async function seedDatabase() {
                 type: 'dog'
             },
             {
-                user_id: users![1].id,
-                name: 'Cooper',
-                type: 'dog'
-            },
-            {
                 user_id: users![2].id,
-                name: 'Milo',
-                type: 'cat'
-            },
-            {
-                user_id: users![2].id,
-                name: 'Oliver',
+                name: 'Bella',
                 type: 'cat'
             }
         ]).select();
 
         if (petError) throw petError;
 
-        // Photos with metadata
+        // Sample photos - Using Pexels free stock photos
         const { data: photos, error: photoError } = await supabase.from('photos').insert([
             {
                 user_id: users![0].id,
                 pet_id: pets![0].id,
-                image_url: 'https://example.com/photos/max_park.jpg',
-                caption: 'Perfect day at the park!',
-                likes_count: 12,
-                is_perfect_shot: true,
-                metadata: {
-                    location: 'Central Park',
-                    device: 'iPhone 13 Pro',
-                    filter_applied: 'natural',
-                    size_bytes: 2500000
-                }
-            },
-            {
-                user_id: users![0].id,
-                pet_id: pets![1].id,
-                image_url: 'https://example.com/photos/luna_window.jpg',
-                caption: 'Luna watching birds',
-                likes_count: 8,
-                is_perfect_shot: true,
-                metadata: {
-                    location: 'Home',
-                    device: 'iPhone 13 Pro',
-                    filter_applied: 'warm',
-                    size_bytes: 1800000
-                }
+                image_url: 'https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg',
+                generated_caption: 'Happy dog playing in the park',
+                generated_hashtags: ['#doglife', '#happydog', '#petportrait'],
+                is_perfect_shot: true
             },
             {
                 user_id: users![1].id,
                 pet_id: pets![2].id,
-                image_url: 'https://example.com/photos/rocky_training.jpg',
-                caption: 'Training session success!',
-                likes_count: 15,
-                is_perfect_shot: true,
-                metadata: {
-                    location: 'Dog Park',
-                    device: 'Pixel 6',
-                    filter_applied: 'vibrant',
-                    size_bytes: 3000000
-                }
+                image_url: 'https://images.pexels.com/photos/1741235/pexels-photo-1741235.jpeg',
+                generated_caption: 'Sleepy dog on the couch',
+                generated_hashtags: ['#sleepydog', '#doglife', '#cozydog'],
+                is_perfect_shot: false
             }
         ]).select();
 
         if (photoError) throw photoError;
 
-        // Comments
-        const { error: commentError } = await supabase.from('comments').insert([
+        // Sample default sounds - Using FreeSound.org public domain sounds
+        const { error: defaultSoundError } = await supabase.from('default_sounds').insert([
             {
-                photo_id: photos![0].id,
-                user_id: users![1].id,
-                content: 'Such a happy pup! What treats do you use to get their attention?'
+                name: 'Classic Whistle',
+                url: 'https://freesound.org/data/previews/584/584096_7614679-lq.mp3',
+                category: 'attention',
+                description: 'A classic whistle sound'
             },
             {
-                photo_id: photos![0].id,
-                user_id: users![2].id,
-                content: 'Perfect timing on this shot! 📸'
-            },
-            {
-                photo_id: photos![1].id,
-                user_id: users![1].id,
-                content: 'Bird watching is the best entertainment!'
-            },
-            {
-                photo_id: photos![2].id,
-                user_id: users![0].id,
-                content: 'Would love to know your training techniques!'
-            }
-        ]);
-
-        if (commentError) throw commentError;
-
-        // Likes for engagement metrics
-        const { error: likeError } = await supabase.from('likes').insert([
-            {
-                photo_id: photos![0].id,
-                user_id: users![1].id
-            },
-            {
-                photo_id: photos![0].id,
-                user_id: users![2].id
-            },
-            {
-                photo_id: photos![1].id,
-                user_id: users![1].id
-            },
-            {
-                photo_id: photos![2].id,
-                user_id: users![0].id
-            },
-            {
-                photo_id: photos![2].id,
-                user_id: users![2].id
-            }
-        ]);
-
-        if (likeError) throw likeError;
-
-        // Comprehensive sound library
-        const { error: soundError } = await supabase.from('attention_sounds').insert([
-            {
-                name: 'Whistle',
-                url: 'https://example.com/sounds/whistle.mp3',
-                category: 'training',
-                is_premium: false
-            },
-            {
-                name: 'Treat',
-                url: 'https://example.com/sounds/treat.mp3',
+                name: 'Treat Bag',
+                url: 'https://freesound.org/data/previews/527/527847_6142149-lq.mp3',
                 category: 'food',
-                is_premium: false
+                description: 'Sound of treats in a bag'
             },
             {
-                name: 'Squeaky',
-                url: 'https://example.com/sounds/squeaky.mp3',
-                category: 'toys',
-                is_premium: false
-            },
-            {
-                name: 'Clicker',
-                url: 'https://example.com/sounds/clicker.mp3',
+                name: 'Dog Clicker',
+                url: 'https://freesound.org/data/previews/450/450615_9402857-lq.mp3',
                 category: 'training',
-                is_premium: true
-            },
-            {
-                name: 'Bird Chirp',
-                url: 'https://example.com/sounds/bird_chirp.mp3',
-                category: 'cats',
-                is_premium: false
-            },
-            {
-                name: 'Bell',
-                url: 'https://example.com/sounds/bell.mp3',
-                category: 'training',
-                is_premium: true
+                description: 'Standard training clicker sound'
             }
         ]);
 
-        if (soundError) throw soundError;
+        if (defaultSoundError) throw defaultSoundError;
+
+        // Sample marketplace sounds
+        const { data: marketplaceSounds, error: marketplaceSoundError } = await supabase
+            .from('marketplace_sounds')
+            .insert([
+                {
+                    name: 'Premium Squeaky Toy',
+                    url: 'https://freesound.org/data/previews/436/436462_4162687-lq.mp3',
+                    category: 'toys',
+                    description: 'High-quality squeaky toy sound',
+                    price: 0.99,
+                    created_by: users![1].id
+                },
+                {
+                    name: 'Cat Bell Deluxe',
+                    url: 'https://freesound.org/data/previews/277/277021_4486188-lq.mp3',
+                    category: 'cats',
+                    description: 'Premium cat bell sound',
+                    price: 1.99,
+                    created_by: users![0].id
+                }
+            ]).select();
+
+        if (marketplaceSoundError) throw marketplaceSoundError;
+
+        // Sample user sounds
+        const { error: userSoundError } = await supabase.from('user_sounds').insert([
+            {
+                user_id: users![0].id,
+                name: 'My Dog Bark',
+                url: 'https://freesound.org/data/previews/413/413047_5121236-lq.mp3',
+                category: 'dogs',
+                description: 'Recording of my dog',
+                is_public: true
+            }
+        ]);
+
+        if (userSoundError) throw userSoundError;
+
+        // Sample sound collections
+        const { data: collections, error: collectionError } = await supabase
+            .from('sound_collections')
+            .insert([
+                {
+                    user_id: users![0].id,
+                    name: 'My Dog Sounds',
+                    is_active: true
+                },
+                {
+                    user_id: users![1].id,
+                    name: 'Cat Collection',
+                    is_active: false
+                }
+            ]).select();
+
+        if (collectionError) throw collectionError;
+
+        // Sample collection sounds
+        const { error: collectionSoundError } = await supabase.from('collection_sounds').insert([
+            {
+                collection_id: collections![0].id,
+                sound_id: marketplaceSounds![0].id,
+                sound_type: 'marketplace',
+                order_index: 1
+            }
+        ]);
+
+        if (collectionSoundError) throw collectionSoundError;
 
         console.log('Database seeded successfully!');
     } catch (error) {
