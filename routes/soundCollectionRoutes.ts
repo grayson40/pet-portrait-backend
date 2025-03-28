@@ -187,6 +187,65 @@ router.post('/:collection_id/sounds', async (req: Request, res: Response): Promi
     }
 });
 
+// Get sounds from collection
+router.get('/:collection_id/sounds', async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { collection_id } = req.params;
+
+        // First get the collection sounds
+        const { data: collectionSounds, error } = await supabase
+            .from('collection_sounds')
+            .select('sound_id, sound_type, order_index')
+            .eq('collection_id', collection_id)
+            .order('order_index');
+
+        if (error) throw error;
+        if (!collectionSounds) return res.status(404).json({ error: 'No sounds found' });
+
+        // Then fetch the actual sound details based on sound_type
+        const soundsWithDetails = await Promise.all(
+            collectionSounds.map(async (cs) => {
+                let soundData;
+                switch (cs.sound_type) {
+                    case 'default':
+                        const { data: defaultSound } = await supabase
+                            .from('default_sounds')
+                            .select('*')
+                            .eq('id', cs.sound_id)
+                            .single();
+                        soundData = defaultSound;
+                        break;
+                    case 'marketplace':
+                        const { data: marketplaceSound } = await supabase
+                            .from('marketplace_sounds')
+                            .select('*')
+                            .eq('id', cs.sound_id)
+                            .single();
+                        soundData = marketplaceSound;
+                        break;
+                    case 'user':
+                        const { data: userSound } = await supabase
+                            .from('user_sounds')
+                            .select('*')
+                            .eq('id', cs.sound_id)
+                            .single();
+                        soundData = userSound;
+                        break;
+                }
+                
+                return {
+                    ...cs,
+                    sound: soundData
+                };
+            })
+        );
+
+        return res.status(200).json(soundsWithDetails);
+    } catch (error: any) {
+        return res.status(400).json({ error: error.message });
+    }
+});
+
 // Remove sound from collection
 router.delete('/:collection_id/sounds/:sound_id', async (req: Request, res: Response): Promise<any> => {
     try {

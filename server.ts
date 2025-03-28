@@ -44,7 +44,7 @@ app.use('/api/photos', photoRoutes);
 // Sound-related routes
 app.use('/api/sounds/default', defaultSoundRoutes);
 app.use('/api/sounds/marketplace', marketplaceSoundRoutes);
-app.use('/api/sounds/user', userSoundRoutes);
+app.use('/api/user-sounds', userSoundRoutes);
 app.use('/api/sounds/collections', soundCollectionRoutes);
 
 // Subscription routes
