@@ -88,7 +88,7 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
                 category,
                 url: publicUrl,
                 created_at: new Date().toISOString(),
-                isPublic: true
+                is_public: true
             }])
             .select();
 
@@ -100,7 +100,6 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
             category: data![0].category,
             url: data![0].url,
             created_at: data![0].created_at,
-            isPremium: data![0].is_premium
         });
     } catch (error: any) {
         console.error('Error uploading sound:', error);
