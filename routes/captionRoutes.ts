@@ -32,6 +32,7 @@ interface VisionAPIResult {
 interface CaptionResponse {
     caption: string;
     hashtags: string[];
+    personality: string;
 }
 
 // Initialize Vision API client
@@ -113,7 +114,7 @@ async function initVisionClient(): Promise<ImageAnnotatorClient> {
 // Generate caption endpoint
 router.post('/generate', async (req: Request, res: Response): Promise<any> => {
     try {
-        const { imageBase64 } = req.body;
+        const { imageBase64, personality = 'short' } = req.body;
 
         if (!imageBase64) {
             return res.status(400).json({ error: 'Image data is required' });
@@ -123,7 +124,7 @@ router.post('/generate', async (req: Request, res: Response): Promise<any> => {
         const visionResult = await analyzeImageWithVision(imageBase64);
         
         // Step 2: Generate caption and hashtags with Anthropic
-        const suggestionResult = await generateCaptionWithAnthropic(visionResult);
+        const suggestionResult = await generateCaptionWithAnthropic(visionResult, personality);
         
         res.status(200).json(suggestionResult);
     } catch (error: any) {
@@ -192,7 +193,10 @@ async function analyzeImageWithVision(imageBase64: string): Promise<VisionAPIRes
 }
 
 // Function to generate captions with Anthropic
-async function generateCaptionWithAnthropic(visionData: VisionAPIResult): Promise<CaptionResponse> {
+async function generateCaptionWithAnthropic(
+    visionData: VisionAPIResult, 
+    personality: string = 'short',
+): Promise<CaptionResponse> {
     try {
         // Extract labels and entities from vision data
         const labels = visionData.labelAnnotations?.map(l => l.description) || [];
@@ -201,13 +205,35 @@ async function generateCaptionWithAnthropic(visionData: VisionAPIResult): Promis
         // Combine all detected objects and concepts
         const allConcepts = [...labels, ...entities];
         
+        // Define personality-specific instructions
+        let personalityGuide = "";
+        
+        switch (personality) {
+            case 'funny':
+                personalityGuide = "The caption should be humorous and playful, incorporating jokes or puns related to the pet.";
+                break;
+            case 'formal':
+                personalityGuide = "The caption should be professional and well-structured with proper grammar, suitable for a formal presentation of the pet.";
+                break;
+            case 'short':
+                personalityGuide = "The caption should be very brief and concise, getting straight to the point in just a few words.";
+                break;
+            default:
+                personalityGuide = "Create a balanced, engaging caption suitable for social media.";
+                break;
+        }
+        
         // Create a prompt for Anthropic
         const prompt = `
 You are an expert social media content creator specializing in pet photography. 
 I have a photo of a pet, and Google Vision API detected these elements: ${allConcepts.join(', ')}.
 
+Relate the caption to the pet and the detected elements.
+
+Personality style: ${personalityGuide}
+
 Please create:
-1. A creative, engaging Instagram caption (1-2 sentences) for this pet photo
+1. A creative, engaging Instagram caption (1-2 sentences) for this pet photo, following the personality style specified above
 2. A list of 3-5 relevant hashtags that would help this post get discovered
 
 Response must be in JSON format like this:
@@ -218,7 +244,7 @@ Response must be in JSON format like this:
 `;
 
         const response = await anthropic.messages.create({
-            model: "claude-3-5-sonnet-20240620",
+            model: "claude-3-7-sonnet-20250219",
             max_tokens: 1000,
             system: "You are a creative social media caption generator. You respond only with valid JSON containing caption and hashtags.",
             messages: [
@@ -233,14 +259,16 @@ Response must be in JSON format like this:
             
             return {
                 caption: result.caption,
-                hashtags: result.hashtags
+                hashtags: result.hashtags,
+                personality: personality
             };
         } catch (parseError) {
             console.error('Error parsing Anthropic response:', parseError);
             // Fallback response if parsing fails
             return {
                 caption: "Enjoying precious moments with my adorable pet! ❤️🐾",
-                hashtags: ["#petlife", "#cutepet", "#petlover", "#petstagram", "#animallovers"]
+                hashtags: ["#petlife", "#cutepet", "#petlover", "#petstagram", "#animallovers"],
+                personality: personality
             };
         }
     } catch (error) {
